@@ -1,30 +1,33 @@
-from typing import Optional
 import logging
 from functools import lru_cache
+from typing import Optional
+
 from fastapi import Request
-from app.infrastructure.external.file.gridfsfile import get_file_storage
-from app.infrastructure.external.search import get_search_engine
-from app.domain.models.user import User
+
 from app.application.errors.exceptions import UnauthorizedError
 
 # Import all required services
 from app.application.services.agent_service import AgentService
-from app.application.services.file_service import FileService
 from app.application.services.auth_service import AuthService
-from app.application.services.token_service import TokenService
 from app.application.services.email_service import EmailService
+from app.application.services.file_service import FileService
+from app.application.services.token_service import TokenService
+from app.domain.models.user import User
 from app.infrastructure.external.cache import get_cache
+from app.infrastructure.external.file.gridfsfile import get_file_storage
 
 # Import all required dependencies for agent service
 from app.infrastructure.external.llm.openai_llm import OpenAILLM
-from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
+from app.infrastructure.external.sandbox.factory import get_sandbox_class
+from app.infrastructure.external.search import get_search_engine
 from app.infrastructure.external.task.redis_task import RedisStreamTask
-from app.infrastructure.utils.llm_json_parser import LLMJsonParser
-from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
-from app.infrastructure.repositories.mongo_session_repository import MongoSessionRepository
 from app.infrastructure.repositories.file_mcp_repository import FileMCPRepository
+from app.infrastructure.repositories.mongo_agent_repository import MongoAgentRepository
+from app.infrastructure.repositories.mongo_session_repository import (
+    MongoSessionRepository,
+)
 from app.infrastructure.repositories.user_repository import MongoUserRepository
-
+from app.infrastructure.utils.llm_json_parser import LLMJsonParser
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -43,7 +46,7 @@ def get_agent_service() -> AgentService:
     llm = OpenAILLM()
     agent_repository = MongoAgentRepository()
     session_repository = MongoSessionRepository()
-    sandbox_cls = DockerSandbox
+    sandbox_cls = get_sandbox_class()
     task_cls = RedisStreamTask
     json_parser = LLMJsonParser()
     file_storage = get_file_storage()
@@ -51,6 +54,7 @@ def get_agent_service() -> AgentService:
     mcp_repository = FileMCPRepository()
     
     # Create AgentService instance
+    logger.info("Initializing AgentService with sandbox provider")
     return AgentService(
         llm=llm,
         agent_repository=agent_repository,

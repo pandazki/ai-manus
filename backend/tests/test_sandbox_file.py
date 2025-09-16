@@ -1,13 +1,15 @@
-"""
-Integration tests for sandbox file upload and download functionality
-"""
-import logging
-import pytest
-import tempfile
-import os
+"""Integration tests for sandbox file upload and download functionality"""
+
 import io
+import logging
+import os
+from pathlib import Path
+
+import pytest
+from dotenv import load_dotenv
 
 from app.infrastructure.external.sandbox.docker_sandbox import DockerSandbox
+from app.infrastructure.external.sandbox.factory import get_sandbox_class
 from app.domain.models.tool_result import ToolResult
 
 logger = logging.getLogger(__name__)
@@ -176,7 +178,9 @@ async def test_file_download_large_file(sandbox_instance, temp_file_path):
 
 # Integration Tests
 
-async def test_upload_then_download_cycle(sandbox_instance, sample_file_content, temp_file_path):
+async def test_upload_then_download_cycle(
+    sandbox_instance, sample_file_content, temp_file_path
+):
     """Test uploading a file and then downloading it"""
     sample_stream = io.BytesIO(sample_file_content)
 
@@ -196,6 +200,76 @@ async def test_upload_then_download_cycle(sandbox_instance, sample_file_content,
     # Verify download result matches original content
     downloaded_content = download_result.read()
     assert downloaded_content == sample_file_content
+
+
+# --- E2B tests -----------------------------------------------------------
+
+
+def _load_env_once():
+    # We load .env lazily so local runs that don't rely on it stay untouched.
+    dotenv_path = Path(__file__).resolve().parents[2] / ".env"
+    load_dotenv(dotenv_path=dotenv_path, override=False)
+
+
+@pytest.fixture(scope="session")
+def e2b_enabled():
+    _load_env_once()
+    provider = os.getenv("SANDBOX_PROVIDER", "docker").lower()
+    return provider == "e2b"
+
+
+@pytest.fixture
+async def e2b_sandbox(e2b_enabled):
+    if not e2b_enabled:
+        pytest.skip("E2B provider is not configured in .env")
+
+    sandbox_cls = get_sandbox_class()
+    sandbox = await sandbox_cls.create()
+    try:
+        await sandbox.ensure_sandbox()
+        yield sandbox
+    finally:
+        await sandbox.destroy()
+
+
+@pytest.mark.e2e
+@pytest.mark.asyncio
+async def test_e2b_file_roundtrip(e2b_sandbox, sample_file_content):
+    """Verify that file operations succeed against an E2B sandbox instance."""
+
+    target_path = "/home/ubuntu/test_e2b_file_roundtrip.txt"
+    write_result = await e2b_sandbox.file_write(
+        file=target_path,
+        content=sample_file_content.decode(),
+        append=False,
+    )
+    assert write_result.success is True
+
+    read_result = await e2b_sandbox.file_read(target_path)
+    assert read_result.success is True
+    assert read_result.data.get("content") == sample_file_content.decode()
+
+    download_result = await e2b_sandbox.file_download(target_path)
+    assert download_result.read() == sample_file_content
+
+
+@pytest.mark.e2e
+@pytest.mark.asyncio
+async def test_e2b_shell_exec(e2b_sandbox):
+    """Run a simple shell command in E2B sandbox to ensure shell endpoints work."""
+
+    exec_result = await e2b_sandbox.exec_command(
+        session_id="test-e2b-shell",
+        exec_dir="/home/ubuntu",
+        command="echo e2b_echo_test",
+    )
+    assert exec_result.success is True
+
+    wait_result = await e2b_sandbox.wait_for_process("test-e2b-shell", seconds=10)
+    assert wait_result.success is True
+
+    view_result = await e2b_sandbox.view_shell("test-e2b-shell", console=True)
+    assert view_result.success is True
 
 
 async def test_multiple_file_operations(sandbox_instance, temp_file_path):

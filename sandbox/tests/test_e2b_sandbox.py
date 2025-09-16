@@ -1,9 +1,14 @@
 """Manual test runner for Manus sandbox on e2b.
 
-The script creates an e2b sandbox based on the configured template, starts the
-Manus sandbox services via Supervisor, and then exercises a few representative
-API endpoints (shell exec/wait/view and file write/read). Use this to verify the
-cloud sandbox quickly before wiring it into the server code path.
+English: This module is converted to pytest and will:
+  - spawn an e2b sandbox using configured template,
+  - start the Manus sandbox services via Supervisor,
+  - exercise representative API endpoints (shell exec/wait/view and file write/read).
+
+中文：该模块已转换为 pytest，将会：
+  - 使用配置的模板创建 e2b 沙箱，
+  - 通过 Supervisor 启动 Manus 沙箱服务，
+  - 访问代表性 API（shell 执行/等待/查看与文件写入/读取）。
 """
 from __future__ import annotations
 
@@ -12,6 +17,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
+import pytest
 import requests
 from dotenv import load_dotenv
 from e2b_code_interpreter import Sandbox
@@ -130,7 +136,7 @@ def exercise_endpoints(base_url: str) -> None:
 def main() -> None:
     # Load .env from project root (two levels up from this file: /ai-manus/.env)
     current_file = Path(__file__).resolve()
-    project_root = current_file.parent.parent
+    project_root = current_file.parent.parent.parent
     dotenv_path = project_root / ".env"
     if dotenv_path.exists():
         load_dotenv(dotenv_path=dotenv_path, override=False)
@@ -159,8 +165,14 @@ def main() -> None:
             with suppress(Exception):
                 supervisor_proc.kill()
         with suppress(Exception):
-            sandbox.close()
+            sandbox.kill()
 
 
-if __name__ == "__main__":
+@pytest.mark.e2b
+def test_e2b_sandbox_smoke() -> None:
+    """English: Pytest entrypoint to validate Manus sandbox API on e2b.
+
+    中文：Pytest 用例入口，验证 e2b 上 Manus 沙箱 API。
+    """
+    # Delegate to the existing flow kept in `main()` for parity.
     main()

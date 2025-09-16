@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/37060a09-c647-4bcb-920c-959f7fa73ebe
 
  * Deployment: Minimal deployment requires only an LLM service, with no dependency on other external services.
  * Tools: Supports Terminal, Browser, File, Web Search, and messaging tools with real-time viewing and takeover capabilities, supports external MCP tool integration.
- * Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment.
+* Sandbox: Each task is allocated a separate sandbox that runs in a local Docker environment by default, with optional support for E2B cloud sandboxes.
  * Task Sessions: Session history is managed through MongoDB/Redis, supporting background tasks.
  * Conversations: Supports stopping and interrupting, file upload and download.
  * Multilingual: Supports both Chinese and English.
@@ -142,7 +142,9 @@ services:
       # Redis password (optional)
       #- REDIS_PASSWORD=
 
-      # Sandbox server address (optional)
+      # Sandbox provider: docker (default) or e2b
+      - SANDBOX_PROVIDER=docker
+      # Sandbox server address (optional, used with docker provider)
       #- SANDBOX_ADDRESS=
       # Docker image used for the sandbox
       - SANDBOX_IMAGE=simpleyyt/manus-sandbox
@@ -160,6 +162,9 @@ services:
       #- SANDBOX_HTTP_PROXY=
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
+      # E2B sandbox configuration (only used when SANDBOX_PROVIDER=e2b)
+      #- E2B_TEMPLATE_ID=
+      #- E2B_API_KEY=
       
       # Search engine configuration
       # Options: baidu, google, bing
@@ -244,6 +249,14 @@ docker compose up -d
 > Note: If you see `sandbox-1 exited with code 0`, this is normal, as it ensures the sandbox image is successfully pulled locally.
 
 Open your browser and visit <http://localhost:5173> to access Manus.
+
+If you prefer to run the sandbox in the cloud via [E2B](https://e2b.dev/), add your `E2B_TEMPLATE_ID` and `E2B_API_KEY` to `.env` and start the stack with the dedicated compose file:
+
+```shell
+docker compose -f docker-compose-e2b.yml up -d
+```
+
+This variant omits the local sandbox container and routes all sandbox requests to the managed E2B environment instead.
 
 ## Development Guide
 

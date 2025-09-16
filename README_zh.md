@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/5cb2240b-0984-4db0-8818-a24f81624b04
 
  * 部署：最小只需要一个 LLM 服务即可完成部署，不需要依赖其它外部服务。
  * 工具：支持 Terminal、Browser、File、Web Search、消息工具，并支持实查看和接管，支持外部 MCP 工具集成。
- * 沙盒：每个 Task 会分配单独的一个沙盒，沙盒在本地 Dock 环境里面运行。
+ * 沙盒：每个 Task 会分配单独的一个沙盒，默认运行在本地 Docker 环境，也可切换到 E2B 云沙盒。
  * 任务会话：通过 Mongo/Redis 对会话历史进行管理，支持后台任务。
  * 对话：支持停止与打断，支持文件上传与下载。
  * 多语言：支持中文与英文。
@@ -124,6 +124,8 @@ services:
       # Redis password (optional)
       #- REDIS_PASSWORD=
 
+      # Sandbox provider: docker (default) or e2b
+      - SANDBOX_PROVIDER=docker
       # Sandbox server address (optional)
       #- SANDBOX_ADDRESS=
       # Docker image used for the sandbox
@@ -142,6 +144,9 @@ services:
       #- SANDBOX_HTTP_PROXY=
       # No proxy hosts for sandbox (optional)
       #- SANDBOX_NO_PROXY=
+      # E2B sandbox configuration (only used when SANDBOX_PROVIDER=e2b)
+      #- E2B_TEMPLATE_ID=
+      #- E2B_API_KEY=
       
       # Search engine configuration
       # Options: baidu, google, bing
@@ -227,6 +232,14 @@ docker compose up -d
 
 打开浏览器访问<http://localhost:5173>即可访问 Manus。
 
+如果希望使用 [E2B](https://e2b.dev/) 云沙盒，请在 `.env` 中填入 `E2B_TEMPLATE_ID` 与 `E2B_API_KEY`，并使用下方命令启动：
+
+```shell
+docker compose -f docker-compose-e2b.yml up -d
+```
+
+该方式不会启动本地 sandbox 容器，而是将沙盒请求转发到 E2B 托管环境。
+
 ## 开发指南
 
 ### 项目结构
@@ -295,6 +308,7 @@ MAX_TOKENS=2000
 #REDIS_PASSWORD=
 
 # Sandbox configuration
+#SANDBOX_PROVIDER=docker
 #SANDBOX_ADDRESS=
 SANDBOX_IMAGE=simpleyyt/manus-sandbox
 SANDBOX_NAME_PREFIX=sandbox
@@ -304,6 +318,8 @@ SANDBOX_NETWORK=manus-network
 #SANDBOX_HTTPS_PROXY=
 #SANDBOX_HTTP_PROXY=
 #SANDBOX_NO_PROXY=
+#E2B_TEMPLATE_ID=
+#E2B_API_KEY=
 
 # Search engine configuration
 # Options: baidu, google, bing

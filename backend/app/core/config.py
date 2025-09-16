@@ -1,5 +1,7 @@
-from pydantic_settings import BaseSettings
+import os
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -26,6 +28,7 @@ class Settings(BaseSettings):
     redis_password: str | None = None
     
     # Sandbox configuration
+    sandbox_provider: str = "docker"  # "docker" or "e2b"
     sandbox_address: str | None = None
     sandbox_image: str | None = None
     sandbox_name_prefix: str | None = None
@@ -35,6 +38,8 @@ class Settings(BaseSettings):
     sandbox_https_proxy: str | None = None
     sandbox_http_proxy: str | None = None
     sandbox_no_proxy: str | None = None
+    e2b_template_id: str | None = None
+    e2b_api_key: str | None = None
     
     # Search engine configuration
     search_provider: str | None = "bing"  # "baidu", "google", "bing"
@@ -76,10 +81,25 @@ class Settings(BaseSettings):
         """Validate configuration settings"""
         if not self.api_key:
             raise ValueError("API key is required")
+        if self.sandbox_provider == "e2b":
+            if not self.e2b_template_id:
+                raise ValueError("E2B template ID is required when sandbox provider is 'e2b'")
+            if not self.e2b_api_key:
+                raise ValueError("E2B API key is required when sandbox provider is 'e2b'")
+            import os
+            os.environ.setdefault("E2B_API_KEY", self.e2b_api_key)
 
 @lru_cache()
 def get_settings() -> Settings:
     """Get application settings"""
     settings = Settings()
+    # Helpful runtime log for provider selection
+    try:
+        import logging
+        logging.getLogger(__name__).info(
+            "Config loaded: sandbox_provider=%s", settings.sandbox_provider
+        )
+    except Exception:
+        pass
     settings.validate()
     return settings 
