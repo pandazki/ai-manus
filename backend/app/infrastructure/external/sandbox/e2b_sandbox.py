@@ -276,7 +276,15 @@ class E2BSandbox(Sandbox):
         return False
 
     async def get_browser(self) -> Browser:
-        return PlaywrightBrowser(self.cdp_url)
+        # 这是一个特殊的逻辑，因为使用了反向代理替换掉了 host 才能拿到 chrome websocket 地址
+        # 所以这里要手动获取再进行真实的 域名替换
+        json_version = await self.client.get(f"{self._cdp_url}/json/version")
+        webSocketDebuggerUrl = json_version.json()["webSocketDebuggerUrl"]
+        # 原始地址是一个类似这样的结果：ws://127.0.0.1:8222/devtools/browser/96dd965c-704f-4a67-afcb-2b3151dc5052
+        # 把 /devtools/browser/[uuid] 前面的内容替换为 wss://{{this.sandbox.get_host(9222)}}
+        cdp_url = webSocketDebuggerUrl.replace("ws://127.0.0.1", f"wss://{self._sandbox.get_host(9222)}")
+        print(f"CDP URL: {cdp_url}")
+        return PlaywrightBrowser(cdp_url)
 
     @classmethod
     async def create(cls) -> Sandbox:

@@ -136,6 +136,7 @@ def main() -> None:
         host_9222 = sb.get_host(9222)
         print("9222 host:", host_9222)
         ws_url = discover_cdp_ws(host_9222)
+        ws_url = discover_cdp_ws(host_9222)
         optional_handshake(ws_url)
         print("CDP WS connectivity check completed.")
     finally:

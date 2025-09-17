@@ -86,6 +86,14 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+# 更新源并安装必要工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nginx \
+        supervisor \
+        ca-certificates \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy remaining project files
 COPY . .
 
