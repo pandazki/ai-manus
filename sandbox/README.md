@@ -77,6 +77,33 @@ docker build -t manus-sandbox .
 docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 manus-sandbox
 ```
 
+### E2B Deployment
+
+For E2B (E2B Cloud) deployment, you need to build a custom E2B template:
+
+1. **Install E2B CLI**:
+   ```bash
+   npm install -g @e2b/cli
+   ```
+
+2. **Login to E2B**:
+   ```bash
+   e2b login
+   ```
+
+3. **Build E2B Template**:
+   ```bash
+   e2b template build -c "supervisord -n -c /app/supervisord.e2b.conf"
+   ```
+
+4. **Configure in .env**:
+   After building the template, configure the E2B template ID in your `.env` file:
+   ```
+   E2B_TEMPLATE_ID=your_template_id_here
+   ```
+
+   The project will then run normally with E2B integration.
+
 ## Port Information
 
 - **8080**: FastAPI service port

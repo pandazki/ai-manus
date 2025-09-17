@@ -78,6 +78,33 @@ docker build -t manus-sandbox .
 docker run -p 8080:8080 -p 9222:9222 -p 5900:5900 -p 5901:5901 manus-sandbox
 ```
 
+### E2B部署
+
+对于 E2B (E2B Cloud) 部署，您需要构建自定义的 E2B 模板：
+
+1. **安装 E2B CLI**：
+   ```bash
+   npm install -g @e2b/cli
+   ```
+
+2. **登录 E2B**：
+   ```bash
+   e2b login
+   ```
+
+3. **构建 E2B 模板**：
+   ```bash
+   e2b template build -c "supervisord -n -c /app/supervisord.e2b.conf"
+   ```
+
+4. **在 .env 中配置**：
+   构建模板后，在您的 `.env` 文件中配置 E2B 模板 ID：
+   ```
+   E2B_TEMPLATE_ID=your_template_id_here
+   ```
+
+   配置完成后，项目即可正常运行并集成 E2B 功能。
+
 ## 端口说明
 
 - **8080**: FastAPI 服务端口
